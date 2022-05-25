@@ -1,44 +1,51 @@
-const HEADER = "⚛️Cosmos Ecosystem⚛️";
-const COINS = ["cosmos", "osmosis", "secret"];
+const HEADER = "⚛️ Ecosystem";
+const COINS = ["cosmos", "osmosis", "juno-network"];
+
+const params = args.widgetParameter ? args.widgetParameter.split(",") : [];
+const isDarkTheme = params?.[0] === 'dark';
 
 async function createWidget() {
+  
   let listWidget = new ListWidget();
-  listWidget.backgroundColor = new Color("#000000");
+  
+  if (isDarkTheme) {
+    listWidget.backgroundColor = new Color('#1C1C1E');; 
+  }
+  listWidget.setPadding(2, 2, 2, 2);
+  
+  
+  const headerStack = listWidget.addStack();
+  headerStack.setPadding(0, 0, 20, 0);
+  let headerText = headerStack.addText(HEADER);
+  headerText.font = Font.lightSystemFont(16);
+  if (isDarkTheme) {
+    headerText.textColor = new Color('#FFFFFF');
+  }
 
 
-  let heading = listWidget.addText(HEADER);
-  heading.centerAlignText();
-  heading.font = Font.lightSystemFont(25);
-  heading.textColor = new Color("#ffffff");
+  for(let coin of COINS) {
 
-  listWidget.addSpacer(15);
-
-  for(let i = 0; i < COINS.length; i++) {
-    let coinInfo = getCoinInfo(COINS[i]);
-
-    console.log("coinInfo: " + coinInfo);
-    
+    let coinInfo = await getCoinInfo(coin);
     let imageRequest = new Request(coinInfo[0].image);
     let coinImage = await imageRequest.loadImage();
 
     addStack(listWidget, coinInfo, coinImage);
-    listWidget.addSpacer(5);
   }
   return listWidget;
 }
 
 async function getCoinInfo(coinId) {
   let url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}`;
+  
   let request = new Request(url);
-  console.log("request: " + request);
   let response = await request.loadJSON();
-  console.log("response: " + response)
+  
   return response;
 }
 
 function addStack(listWidget, coinInfo, coinImage) {
   let rowStack = listWidget.addStack();
-  rowStack.setPadding(0, 0, 14, 0);
+  rowStack.setPadding(0, 0, 16, 0);
   rowStack.layoutHorizontally();
 
   let imageStack = rowStack.addStack();
@@ -47,13 +54,22 @@ function addStack(listWidget, coinInfo, coinImage) {
   imageNode.imageSize = new Size(20, 20);
   imageNode.leftAlignImage();
 
-  let symbolStack = rowStack.addStack();
-  let symbolText = symbolStack.addText(coinInfo[0].symbol);
-  symbolText.font = Font.mediumSystemFont(16);
+  let coinSymbol = coinInfo[0].symbol.toUpperCase().padEnd(6, " ");
 
+  let symbolStack = rowStack.addStack();
+  symbolStack.size = new Size(50, 20);
+  let symbolText = symbolStack.addText(coinSymbol);
+  symbolText.font = Font.mediumSystemFont(12);
+
+
+  let coinPrice = String(coinInfo[0].current_price);
+  
   let priceStack = rowStack.addStack();
-  let priceText = priceStack.addText(coinInfo[0].current_price)
-  priceText.font = Font.mediumSystemFont(16);
+  let priceText = priceStack.addText(`$${coinPrice}`);
+  priceText.font = Font.mediumSystemFont(12);
+  
+  let priceTextColor = coinInfo[0].price_change_24h > 0? '#4AA956' : '#D22E2E';
+    priceText.textColor = new Color(priceTextColor);
 }
 
 
@@ -62,10 +78,8 @@ let widget = await createWidget();
 if (config.runsInWidget) {
   Script.setWidget(widget);
 } else {
-  widget.presentMedium();
+  widget.presentSmall();
 }
 
 
 Script.complete();
-
-
